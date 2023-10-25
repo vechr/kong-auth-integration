@@ -1,4 +1,4 @@
-# Kong Auth Integration
+# Kong Auth Integration (Kong Plugin)
 
 ![Concepts](./images/auth.svg)
 
@@ -71,7 +71,7 @@ docker run -d --name=kong-gateway \
   zulfikar4568/kong-gateway
 ```
 
-### Try to put plugin in services
+### Use plugin in services
 ```bash
 curl -X POST http://localhost:8001/services/example_service/plugins \
    --data "name=kong-auth-integration" \
