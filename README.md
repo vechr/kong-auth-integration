@@ -1,69 +1,81 @@
-[![Unix build](https://img.shields.io/github/actions/workflow/status/Kong/kong-plugin/test.yml?branch=master&label=Test&logo=linux)](https://github.com/Kong/kong-plugin/actions/workflows/test.yml)
-[![Luacheck](https://github.com/Kong/kong-plugin/workflows/Lint/badge.svg)](https://github.com/Kong/kong-plugin/actions/workflows/lint.yml)
+# Kong Auth Integration
 
-Kong plugin template
-====================
+![Concepts](./images/auth.svg)
 
-This repository contains a very simple Kong plugin template to get you
-up and running quickly for developing your own plugins.
+The idea is to get information about behind the scenes of access token, so before access the resources, you need to add jwt token, then token will pass to the 3rd party application then the return of the **BODY** will attach to the request in backend service, it can be in two ways:
+- Authorization Headers
+- Cookie ( if you implement CSRF protection, you might be attach automatically the access token)
 
-This template was designed to work with the
-[`kong-pongo`](https://github.com/Kong/kong-pongo) and
-[`kong-vagrant`](https://github.com/Kong/kong-vagrant) development environments.
+### What's the parameter
 
-Please check out those repos `README` files for usage instructions. For a complete
-walkthrough check [this blogpost on the Kong website](https://konghq.com/blog/custom-lua-plugin-kong-gateway).
+- `token_header` name of the header which hold access token
+	- type: **string**
+	- default: **Authorization**
+- `cookie_name` name of the cookie of which hold the access token
+  - type: **string**
+  - default: **access-token**
+- `authentication_endpoint` url of the 3rd party authentication service
+	- type: **URL**
+	- required: **true**
+	- method: **GET**
 
+### What's the headers which attached into the request
 
-Naming and versioning conventions
-=================================
+payload body will attach in:
+- headers `X-User-Payload`
 
-There are a number "named" components and related versions. These are the conventions:
+## How to Install
+For this example we used docker to install
+### Build the docker Images
+```bash
+docker build -f ./Dockerfile -t zulfikar4568/kong-gateway .
+```
 
-* *Kong plugin name*: This is the name of the plugin as it is shown in the Kong
-  Manager GUI, and the name used in the file system. A plugin named `my-cool-plugin`
-  would have a `handler.lua` file at `./kong/plugins/my-cool-plugin/handler.lua`.
+### Start the Database
+```bash
+docker run -d --name "kong-quickstart-database" --network="kong-quickstart-net" -e "POSTGRES_DB=postgres" -e "POSTGRES_USER=kong" -e "POSTGRES_PASSWORD=kong" postgres:13
+```
 
-* *Kong plugin version*: This is the version of the plugin code, expressed in
-  `x.y.z` format (using Semantic Versioning is recommended). This version should
-  be set in the `handler.lua` file as the `VERSION` property on the plugin table.
+### Migrate database to kong
+```bash
+docker run --rm --network=kong-quickstart-net \
+ -e "KONG_DATABASE=postgres" \
+ -e "KONG_PG_HOST=kong-quickstart-database" \
+ -e "KONG_PG_USER=kong" \
+ -e "KONG_PG_PASSWORD=kong" \
+ -e "KONG_PASSWORD=test" \
+zulfikar4568/kong-gateway kong migrations bootstrap
+```
 
-* *LuaRocks package name*: This is the name used in the LuaRocks eco system.
-  By convention this is `kong-plugin-[KongPluginName]`. This name is used
-  for the `rockspec` file, both in the filename as well as in the contents
-  (LuaRocks requires that they match).
+### Run kong gateway using Docker
+```bash
+docker run -d --name=kong-gateway \
+  --network=kong-quickstart-net \
+	-e "KONG_DATABASE=postgres" \
+	-e "KONG_PG_HOST=kong-quickstart-database" \
+	-e "KONG_PG_USER=kong" \
+	-e "KONG_PG_PASSWORD=kong" \
+	-e "KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl" \
+	-e "KONG_PROXY_ACCESS_LOG=/dev/stdout" \
+	-e "KONG_ADMIN_ACCESS_LOG=/dev/stdout" \
+	-e "KONG_PROXY_ERROR_LOG=/dev/stderr" \
+	-e "KONG_ADMIN_ERROR_LOG=/dev/stderr" \
+	-e "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+	-e "KONG_VERSION=" \
+	-e "KONG_PREFIX=/usr/local/kong" \
+  -p 8000:8000 \
+  -p 8001:8001 \
+  -p 8002:8002 \
+  -p 8003:8003 \
+  -p 8004:8004 \
+  zulfikar4568/kong-gateway
+```
 
-* *LuaRocks package version*: This is the version of the package, and by convention
-  it should be identical to the *Kong plugin version*. As with the *LuaRocks package
-  name* the version is used in the `rockspec` file, both in the filename as well
-  as in the contents (LuaRocks requires that they match).
-
-* *LuaRocks rockspec revision*: This is the revision of the rockspec, and it only
-  changes if the rockspec is updated. So when the source code remains the same,
-  but build instructions change for example. When there is a new *LuaRocks package
-  version* the *LuaRocks rockspec revision* is reset to `1`. As with the *LuaRocks
-  package name* the revision is used in the `rockspec` file, both in the filename
-  as well as in the contents (LuaRocks requires that they match).
-
-* *LuaRocks rockspec name*: this is the filename of the rockspec. This is the file
-  that contains the meta-data and build instructions for the LuaRocks package.
-  The filename is `[package name]-[package version]-[package revision].rockspec`.
-
-Example
--------
-
-* *Kong plugin name*: `my-cool-plugin`
-
-* *Kong plugin version*: `1.4.2` (set in the `VERSION` field inside `handler.lua`)
-
-This results in:
-
-* *LuaRocks package name*: `kong-plugin-my-cool-plugin`
-
-* *LuaRocks package version*: `1.4.2`
-
-* *LuaRocks rockspec revision*: `1`
-
-* *rockspec file*: `kong-plugin-my-cool-plugin-1.4.2-1.rockspec`
-
-* File *`handler.lua`* is located at: `./kong/plugins/my-cool-plugin/handler.lua` (and similar for the other plugin files)
+### Try to put plugin in services
+```bash
+curl -X POST http://localhost:8001/services/example_service/plugins \
+   --data "name=kong-auth-integration" \
+   --data config.token_header=Authorization \
+	 --data config.cookie_name=access-token \
+   --data config.authentication_endpoint=http://localhost:3000/api/v1/auth/me
+ ```
