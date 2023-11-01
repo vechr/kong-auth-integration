@@ -33,7 +33,7 @@ docker build -f ./Dockerfile -t zulfikar4568/kong-gateway .
 
 ### Start the Database
 ```bash
-docker run -d --name "kong-quickstart-database" --network="kong-quickstart-net" -e "POSTGRES_DB=postgres" -e "POSTGRES_USER=kong" -e "POSTGRES_PASSWORD=kong" postgres:13
+docker run -d --name "kong-quickstart-database" --network="kong-quickstart-net" -e "POSTGRES_DB=kong" -e "POSTGRES_USER=kong" -e "POSTGRES_PASSWORD=kong" postgres:13
 ```
 
 ### Migrate database to kong
