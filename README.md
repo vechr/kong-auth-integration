@@ -33,6 +33,7 @@ docker build -f ./Dockerfile -t zulfikar4568/kong-gateway .
 
 ### Start the Database
 ```bash
+docker network create kong-quickstart-net
 docker run -d --name "kong-quickstart-database" --network="kong-quickstart-net" -e "POSTGRES_DB=kong" -e "POSTGRES_USER=kong" -e "POSTGRES_PASSWORD=kong" postgres:13
 ```
 
@@ -71,11 +72,46 @@ docker run -d --name=kong-gateway \
   zulfikar4568/kong-gateway
 ```
 
+### Setup the Application
+#### Run the simple app
+This application will return all headers, and this app will run in port `3700`
+```bash
+cd example/simple-app
+yarn start
+```
+
+#### Run the Authentication Service
+You can use this template as [authentication service](https://github.com/zulfikar4568/nest-boilerplate). Change the `.env.example` to `.env`
+```bash
+# Running the dependencies
+docker-compose up -d --build
+
+# Migrate the DB
+yarn && yarn db:migrate
+yarn prisma:sync
+yarn db:seed
+
+# Running the app in dev mode
+yarn dev
+```
+
 ### Use plugin in services
 ```bash
-curl -X POST http://localhost:8001/services/example_service/plugins \
+curl -X POST http://localhost:8001/services \
+  -H "Content-Type: application/json" \
+  -d '{"name": "example-service", "host": "host.docker.internal", "port": 3700, "path": "/"}'
+
+curl -X POST http://localhost:8001/services/example-service/routes/ \
+  -H "Content-Type: application/json" \
+  -d '{"name": "example-route", "paths": [ "/" ], "protocols": [ "http", "https" ], "methods": [ "GET", "PUT", "PATCH", "POST", "DELETE", "OPTIONS", "HEAD", "TRACE", "CONNECT" ]}'
+
+curl -X POST http://localhost:8001/services/example-service/plugins \
    --data "name=kong-auth-integration" \
    --data config.token_header=Authorization \
 	 --data config.cookie_name=access-token \
-   --data config.authentication_endpoint=http://localhost:3000/api/v1/auth/me
+   --data config.authentication_endpoint=http://host.docker.internal:4500/api/v1/session/me
  ```
+
+ ### Try the Plugin
+ * Access the `localhost:4500/openapi` then login the user `/api/v1/session` so you will get the `access-token`
+ * Try access the `localhost:8000`, you need to pass the token in `Authorization Bearer eyj8odk34...`, and you will get the `X-User-Payload` headers same as body from `http://localhost:4500/api/v1/session/me`.
