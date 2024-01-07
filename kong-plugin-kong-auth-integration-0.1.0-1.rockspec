@@ -25,6 +25,9 @@ description = {
 
 
 dependencies = {
+  "lua >= 5.1",
+  "lua-resty-http >= 0.17.1-0",
+  "lua-resty-cookie >= 0.1.0-1"
 }
 
 
