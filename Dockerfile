@@ -1,6 +1,4 @@
-FROM kong/kong-gateway:latest
-
-COPY ./config/kong.conf /etc/kong/
+FROM kong/kong-gateway:3.5
 
 USER root
 
@@ -27,4 +25,4 @@ ENTRYPOINT ["/entrypoint.sh"]
 EXPOSE 8000 8001 8001 8003 8004
 STOPSIGNAL SIGQUIT
 HEALTHCHECK --interval=10s --timeout=10s --retries=10 CMD kong health
-CMD ["kong", "start", "-c", "/etc/kong/kong.conf", "--vv"]
+CMD ["kong", "docker-start"]

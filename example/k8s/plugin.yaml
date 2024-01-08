@@ -1,0 +1,9 @@
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: kong-auth-integration
+config:
+  token_header: Authorization
+  cookie_name: access-token
+  authentication_endpoint: http://host.docker.internal:4500/api/v1/session/me
+plugin: kong-auth-integration

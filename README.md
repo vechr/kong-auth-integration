@@ -21,7 +21,7 @@ The idea is to get information about behind the scenes of access token, so befor
 
 ### What's the headers which attached into the request
 
-payload body will attach in:
+payload **body** will attach in:
 - headers `X-User-Payload`
 
 ## How to Install
@@ -115,3 +115,6 @@ curl -X POST http://localhost:8001/services/example-service/plugins \
  ### Try the Plugin
  * Access the `localhost:4500/openapi` then login the user `/api/v1/session` so you will get the `access-token`
  * Try access the `localhost:8000`, you need to pass the token in `Authorization Bearer eyj8odk34...`, and you will get the `X-User-Payload` headers same as body from `http://localhost:4500/api/v1/session/me`.
+
+### Kubernetes
+You can [check](https://github.com/vechr/kong-auth-integration/tree/master/example/k8s) how to use in kubernetes
