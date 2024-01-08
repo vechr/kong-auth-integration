@@ -28,7 +28,7 @@ payload **body** will attach in:
 For this example we used docker to install
 ### Build the docker Images
 ```bash
-docker build -f ./Dockerfile -t zulfikar4568/kong-gateway .
+docker build -f ./Dockerfile -t <your-username>/kong-gateway .
 ```
 
 ### Start the Database
@@ -45,7 +45,7 @@ docker run --rm --network=kong-quickstart-net \
  -e "KONG_PG_USER=kong" \
  -e "KONG_PG_PASSWORD=kong" \
  -e "KONG_PASSWORD=test" \
-zulfikar4568/kong-gateway kong migrations bootstrap
+<your-username>/kong-gateway kong migrations bootstrap
 ```
 
 ### Run kong gateway using Docker
@@ -69,7 +69,7 @@ docker run -d --name=kong-gateway \
   -p 8002:8002 \
   -p 8003:8003 \
   -p 8004:8004 \
-  zulfikar4568/kong-gateway
+  <your-username>/kong-gateway
 ```
 
 ### Setup the Application
